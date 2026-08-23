@@ -1,0 +1,14 @@
+ply
+format ascii 1.0
+comment Exported by Voxora Vision Library
+element vertex 3
+property float x
+property float y
+property float z
+property uchar red
+property uchar green
+property uchar blue
+end_header
+-1.0000 -0.5000 3.0000 255 60 60
+1.0000 -0.5000 3.2000 60 255 60
+0.0000 1.0000 2.8000 60 60 255
