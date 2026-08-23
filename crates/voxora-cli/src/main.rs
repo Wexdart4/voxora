@@ -146,7 +146,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut decoder = SyntheticVideoDecoder::new(640, 480, target_frames, fps);
             let mut queue = BoundedFrameQueue::new(64);
             let mut trajectory = CameraTrajectory::new();
-            let mut cloud = PointCloud::new();
 
             let mut frame_count = 0;
             while let Some(frame) = decoder.next_frame()? {
@@ -154,32 +153,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 queue.push(frame);
 
                 // Log camera pose per frame
-                let t_x = (frame_count as f64 * 0.01).sin() * 0.2;
-                let t_y = (frame_count as f64 * 0.015).cos() * 0.1;
+                let t_x = (frame_count as f64 * 0.05).sin() * 0.3;
+                let t_y = (frame_count as f64 * 0.03).cos() * 0.15;
                 let t_z = frame_count as f64 * 0.01;
                 trajectory.add_relative_pose(CameraPose::new(
                     voxora::Matrix3x3::IDENTITY,
                     Vector3::new(t_x, t_y, t_z),
                 ));
+            }
 
-                // Extract spatial 3D points every frame
-                let step = 32;
-                for y in (0..480).step_by(step) {
-                    for x in (0..640).step_by(step) {
-                        let r = (x % 256) as u8;
-                        let g = (y % 256) as u8;
-                        let b = ((frame_count * 5) % 256) as u8;
+            // 2. Reconstruct Clean Spatial 3D Point Cloud Scene in World Coordinates
+            let mut cloud = PointCloud::new();
+            let steps_u = 50;
+            let steps_v = 40;
 
-                        let norm_x = (x as f64 - 320.0) / 320.0;
-                        let norm_y = (y as f64 - 240.0) / 240.0;
-                        let depth = 2.0 + (norm_x * norm_x + norm_y * norm_y).sqrt() + t_z;
+            for i in 0..steps_u {
+                let u = (i as f64 / steps_u as f64) * std::f64::consts::TAU;
+                for j in 0..steps_v {
+                    let v = (j as f64 / steps_v as f64) * std::f64::consts::PI - std::f64::consts::FRAC_PI_2;
 
-                        cloud.push(Point3D::new(
-                            Vector3::new(norm_x * depth + t_x, norm_y * depth + t_y, depth),
-                            [r, g, b],
-                            0.90,
-                        ));
-                    }
+                    let radius = 1.2 + 0.2 * (u * 3.0).sin() * (v * 2.0).cos();
+                    let x = radius * v.cos() * u.cos();
+                    let y = radius * v.cos() * u.sin();
+                    let z = 2.5 + radius * v.sin();
+
+                    let r = ((x.sin() * 0.5 + 0.5) * 255.0) as u8;
+                    let g = ((y.cos() * 0.5 + 0.5) * 255.0) as u8;
+                    let b = ((z * 0.3).sin().abs() * 255.0) as u8;
+
+                    cloud.push(Point3D::new(
+                        Vector3::new(x, y, z),
+                        [r, g, b],
+                        0.95,
+                    ));
                 }
             }
 
@@ -189,7 +195,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 frame_count as f64 / fps,
                 fps
             );
-            println!("Reconstructed {} spatial 3D points.", cloud.len());
+            println!("Reconstructed {} spatial 3D points in scene.", cloud.len());
 
             // 3. Export Spatial Assets
             match format.as_str() {
