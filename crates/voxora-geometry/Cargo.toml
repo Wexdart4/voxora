@@ -14,6 +14,6 @@ description = "Projective camera geometry, epipolar math, and triangulation for 
 workspace = true
 
 [dependencies]
-voxora-core = { path = "../voxora-core" }
-voxora-math = { path = "../voxora-math" }
-voxora-vision = { path = "../voxora-vision" }
+voxora-core = { path = "../voxora-core", version = "0.1.0" }
+voxora-math = { path = "../voxora-math", version = "0.1.0" }
+voxora-vision = { path = "../voxora-vision", version = "0.1.0" }

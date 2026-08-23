@@ -14,4 +14,4 @@ description = "Core types, frame structures, and error definitions for Voxora"
 workspace = true
 
 [dependencies]
-voxora-math = { path = "../voxora-math" }
+voxora-math = { path = "../voxora-math", version = "0.1.0" }

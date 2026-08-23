@@ -14,7 +14,7 @@ description = "3D Rendering abstractions and software projection rendering for V
 workspace = true
 
 [dependencies]
-voxora-core = { path = "../voxora-core" }
-voxora-geometry = { path = "../voxora-geometry" }
-voxora-math = { path = "../voxora-math" }
-voxora-reconstruction = { path = "../voxora-reconstruction" }
+voxora-core = { path = "../voxora-core", version = "0.1.0" }
+voxora-geometry = { path = "../voxora-geometry", version = "0.1.0" }
+voxora-math = { path = "../voxora-math", version = "0.1.0" }
+voxora-reconstruction = { path = "../voxora-reconstruction", version = "0.1.0" }

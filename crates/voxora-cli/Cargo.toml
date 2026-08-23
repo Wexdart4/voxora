@@ -14,4 +14,4 @@ description = "Command-line interface binary for Voxora deterministic 3D video p
 workspace = true
 
 [dependencies]
-voxora = { path = "../voxora" }
+voxora = { path = "../voxora", version = "0.1.0" }
