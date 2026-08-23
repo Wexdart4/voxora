@@ -1,0 +1,36 @@
+[workspace]
+members = [
+    "crates/voxora-math",
+    "crates/voxora-core",
+    "crates/voxora-vision",
+    "crates/voxora-geometry",
+    "crates/voxora-reconstruction",
+    "crates/voxora-render",
+    "crates/voxora-cli",
+    "crates/voxora",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["Voxora Contributors"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/pomagrenate/voxora"
+homepage = "https://github.com/pomagrenate/voxora"
+
+[workspace.lints.rust]
+missing_docs = "warn"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

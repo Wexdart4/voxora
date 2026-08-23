@@ -1,0 +1,17 @@
+[package]
+name = "voxora-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Core types, frame structures, and error definitions for Voxora"
+
+[lints]
+workspace = true
+
+[dependencies]
+voxora-math = { path = "../voxora-math" }

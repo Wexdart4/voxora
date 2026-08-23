@@ -1,0 +1,20 @@
+[package]
+name = "voxora-reconstruction"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "3D Point cloud management and spatial multi-frame reconstruction for Voxora"
+
+[lints]
+workspace = true
+
+[dependencies]
+voxora-core = { path = "../voxora-core" }
+voxora-geometry = { path = "../voxora-geometry" }
+voxora-math = { path = "../voxora-math" }
+voxora-vision = { path = "../voxora-vision" }

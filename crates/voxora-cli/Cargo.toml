@@ -1,0 +1,17 @@
+[package]
+name = "voxora-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Command-line interface binary for Voxora deterministic 3D video projection"
+
+[lints]
+workspace = true
+
+[dependencies]
+voxora = { path = "../voxora" }

@@ -1,0 +1,9 @@
+/target
+**/*.rs.bk
+*.user
+.idea/
+.vscode/
+*.swp
+*.swo
+/dist
+/voxora_output

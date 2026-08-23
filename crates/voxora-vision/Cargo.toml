@@ -1,0 +1,18 @@
+[package]
+name = "voxora-vision"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Computer vision, feature detection, and optical flow algorithms for Voxora"
+
+[lints]
+workspace = true
+
+[dependencies]
+voxora-core = { path = "../voxora-core" }
+voxora-math = { path = "../voxora-math" }

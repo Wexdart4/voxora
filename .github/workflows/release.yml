@@ -1,0 +1,39 @@
+name: Release & Publish to Crates.io
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    name: Publish to Crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Test Suite
+        run: cargo test --workspace
+
+      - name: Publish to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cargo publish --p voxora-math --no-verify
+          cargo publish --p voxora-core --no-verify
+          cargo publish --p voxora-vision --no-verify
+          cargo publish --p voxora-geometry --no-verify
+          cargo publish --p voxora-reconstruction --no-verify
+          cargo publish --p voxora-render --no-verify
+          cargo publish --p voxora --no-verify
+          cargo publish --p voxora-cli --no-verify
