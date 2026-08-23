@@ -8,4 +8,5 @@
 /dist
 /voxora_output
 /output_*
-/tests/videos/*.mp4
+/tests/videos/
+
