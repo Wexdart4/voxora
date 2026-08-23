@@ -217,7 +217,7 @@ mod tests {
     #[test]
     fn test_compute_plane_homography() {
         let k1 = CameraIntrinsics::from_fov(60.0, 320, 240);
-        let k2 = k1.clone();
+        let k2 = k1;
         let pose = CameraPose::new(Matrix3x3::IDENTITY, Vector3::new(-0.2, 0.0, 0.0));
         let n = Vector3::new(0.0, 0.0, 1.0);
         let d = 2.0;
