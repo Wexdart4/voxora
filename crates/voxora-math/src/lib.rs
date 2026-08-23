@@ -151,8 +151,8 @@ impl Matrix3x3 {
     /// Scales all matrix elements by a scalar factor.
     pub fn scale(&self, s: f64) -> Self {
         let mut out = [0.0; 9];
-        for i in 0..9 {
-            out[i] = self.data[i] * s;
+        for (i, val) in out.iter_mut().enumerate() {
+            *val = self.data[i] * s;
         }
         Self::from_row_major(out)
     }

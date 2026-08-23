@@ -85,9 +85,7 @@ fn base64_encode(data: &[u8]) -> String {
 pub fn export_gltf_json(cloud: &PointCloud) -> Result<String, VoxoraError> {
     let count = cloud.len();
     if count == 0 {
-        let json = format!(
-            "{{\n  \"asset\": {{ \"version\": \"2.0\", \"generator\": \"Voxora Vision\" }},\n  \"scene\": 0,\n  \"scenes\": [ {{ \"nodes\": [] }} ],\n  \"nodes\": []\n}}"
-        );
+        let json = "{\n  \"asset\": { \"version\": \"2.0\", \"generator\": \"Voxora Vision\" },\n  \"scene\": 0,\n  \"scenes\": [ { \"nodes\": [] } ],\n  \"nodes\": []\n}".to_string();
         return Ok(json);
     }
 

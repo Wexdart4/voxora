@@ -154,7 +154,7 @@ impl PointCloud {
 
         let mut mean_distances = vec![0.0f64; n];
 
-        for i in 0..n {
+        for (i, mean_dist) in mean_distances.iter_mut().enumerate().take(n) {
             let p1 = &self.points[i];
             let gx = (p1.position.x / grid_size).floor() as i64;
             let gy = (p1.position.y / grid_size).floor() as i64;
@@ -183,9 +183,9 @@ impl PointCloud {
             if dists.len() >= k_neighbors {
                 dists.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
                 let k_sum: f64 = dists.iter().take(k_neighbors).sum();
-                mean_distances[i] = k_sum / k_neighbors as f64;
+                *mean_dist = k_sum / k_neighbors as f64;
             } else {
-                mean_distances[i] = f64::MAX / 2.0; // Penalty for isolated points with few neighbors
+                *mean_dist = f64::MAX / 2.0; // Penalty for isolated points with few neighbors
             }
         }
 
