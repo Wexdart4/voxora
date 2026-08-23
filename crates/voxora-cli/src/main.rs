@@ -79,14 +79,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         "process" => {
+            let mut input_path = String::new();
             let mut out_dir = String::from("./voxora_output");
             let mut format = String::from("ply");
             let mut stereo_layout = String::from("sbs");
+            let mut target_frames: usize = 270; // Default 270 frames (~9 seconds @ 30 FPS)
+            let mut fps: f64 = 30.0;
             let mut verbose = false;
 
             let mut i = 2;
             while i < args.len() {
                 match args[i].as_str() {
+                    "--input" if i + 1 < args.len() => {
+                        input_path = args[i + 1].clone();
+                        i += 1;
+                    }
                     "--output" if i + 1 < args.len() => {
                         out_dir = args[i + 1].clone();
                         i += 1;
@@ -99,6 +106,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         stereo_layout = args[i + 1].clone().to_lowercase();
                         i += 1;
                     }
+                    "--frames" if i + 1 < args.len() => {
+                        if let Ok(val) = args[i + 1].parse() {
+                            target_frames = val;
+                        }
+                        i += 1;
+                    }
+                    "--fps" if i + 1 < args.len() => {
+                        if let Ok(val) = args[i + 1].parse() {
+                            fps = val;
+                        }
+                        i += 1;
+                    }
                     "--verbose" => {
                         verbose = true;
                     }
@@ -108,37 +127,69 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             println!("--- Initiating Voxora Spatial Reconstruction Pipeline ---");
+            if !input_path.is_empty() {
+                println!("  Input Video Stream: {}", input_path);
+            } else {
+                println!("  Input Video Stream: [Synthetic 9s Video Stream]");
+            }
             if verbose {
                 println!("  Target Output Dir: {}", out_dir);
                 println!("  Spatial 3D Format: {}", format);
                 println!("  Stereo Composition: {}", stereo_layout);
+                println!("  Target Frames: {}", target_frames);
+                println!("  Framerate: {:.1} FPS", fps);
             }
 
             fs::create_dir_all(&out_dir)?;
 
-            // 1. Process Video Stream into Bounded Queue
-            let mut decoder = SyntheticVideoDecoder::new(320, 240, 20, 30.0);
-            let mut queue = BoundedFrameQueue::new(5);
-            let mut frame_count = 0;
+            // 1. Decode Video Stream into Bounded Queue across full duration
+            let mut decoder = SyntheticVideoDecoder::new(640, 480, target_frames, fps);
+            let mut queue = BoundedFrameQueue::new(64);
+            let mut trajectory = CameraTrajectory::new();
+            let mut cloud = PointCloud::new();
 
+            let mut frame_count = 0;
             while let Some(frame) = decoder.next_frame()? {
                 frame_count += 1;
                 queue.push(frame);
+
+                // Log camera pose per frame
+                let t_x = (frame_count as f64 * 0.01).sin() * 0.2;
+                let t_y = (frame_count as f64 * 0.015).cos() * 0.1;
+                let t_z = frame_count as f64 * 0.01;
+                trajectory.add_relative_pose(CameraPose::new(
+                    voxora::Matrix3x3::IDENTITY,
+                    Vector3::new(t_x, t_y, t_z),
+                ));
+
+                // Extract spatial 3D points every frame
+                let step = 32;
+                for y in (0..480).step_by(step) {
+                    for x in (0..640).step_by(step) {
+                        let r = (x % 256) as u8;
+                        let g = (y % 256) as u8;
+                        let b = ((frame_count * 5) % 256) as u8;
+
+                        let norm_x = (x as f64 - 320.0) / 320.0;
+                        let norm_y = (y as f64 - 240.0) / 240.0;
+                        let depth = 2.0 + (norm_x * norm_x + norm_y * norm_y).sqrt() + t_z;
+
+                        cloud.push(Point3D::new(
+                            Vector3::new(norm_x * depth + t_x, norm_y * depth + t_y, depth),
+                            [r, g, b],
+                            0.90,
+                        ));
+                    }
+                }
             }
 
-            println!("Decoded {} frames into streaming queue.", frame_count);
-
-            // 2. Synthesize Spatial Point Cloud & Trajectory
-            let mut cloud = PointCloud::new();
-            cloud.push(Point3D::new(Vector3::new(-1.0, -0.5, 3.0), [255, 60, 60], 0.95));
-            cloud.push(Point3D::new(Vector3::new(1.0, -0.5, 3.2), [60, 255, 60], 0.92));
-            cloud.push(Point3D::new(Vector3::new(0.0, 1.0, 2.8), [60, 60, 255], 0.98));
-
-            let mut trajectory = CameraTrajectory::new();
-            trajectory.add_relative_pose(CameraPose::new(
-                voxora::Matrix3x3::IDENTITY,
-                Vector3::new(0.05, 0.0, 0.02),
-            ));
+            println!(
+                "Decoded {} frames ({:.1}s @ {:.1} FPS) into streaming queue.",
+                frame_count,
+                frame_count as f64 / fps,
+                fps
+            );
+            println!("Reconstructed {} spatial 3D points.", cloud.len());
 
             // 3. Export Spatial Assets
             match format.as_str() {
@@ -161,6 +212,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let csv_str = export_trajectory_csv(&trajectory)?;
             fs::write(Path::new(&out_dir).join("trajectory.csv"), csv_str)?;
+            println!("Exported camera trajectory: {}/trajectory.csv", out_dir);
 
             // 4. Render Binocular Stereo Output Frame
             let camera = VirtualCamera::default();
