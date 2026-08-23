@@ -163,26 +163,14 @@ pub struct PlaneSweepStereo {
 
 impl Default for PlaneSweepStereo {
     fn default() -> Self {
-        Self {
-            num_planes: 32,
-            min_depth: 1.0,
-            max_depth: 8.0,
-            p1: 10.0,
-            p2: 80.0,
-        }
+        Self { num_planes: 32, min_depth: 1.0, max_depth: 8.0, p1: 10.0, p2: 80.0 }
     }
 }
 
 impl PlaneSweepStereo {
     /// Creates a new Plane Sweep Stereo engine.
     pub fn new(num_planes: usize, min_depth: f32, max_depth: f32, p1: f32, p2: f32) -> Self {
-        Self {
-            num_planes,
-            min_depth,
-            max_depth,
-            p1,
-            p2,
-        }
+        Self { num_planes, min_depth, max_depth, p1, p2 }
     }
 
     /// Computes 5x5 Census Transform bitmask for a grayscale frame.
@@ -203,8 +191,8 @@ impl PlaneSweepStereo {
                         if dx == 0 && dy == 0 {
                             continue;
                         }
-                        let val =
-                            gray.data[((y as i32 + dy) as usize) * width + ((x as i32 + dx) as usize)];
+                        let val = gray.data
+                            [((y as i32 + dy) as usize) * width + ((x as i32 + dx) as usize)];
                         if val >= center_val {
                             bitmask |= 1 << bit_idx;
                         }
@@ -296,8 +284,13 @@ impl PlaneSweepStereo {
 
                 for k in 0..d_count {
                     let l_same = sgm_cost[prev_row_idx + k];
-                    let l_minus1 = if k > 0 { sgm_cost[prev_row_idx + k - 1] + self.p1 } else { f32::MAX };
-                    let l_plus1 = if k + 1 < d_count { sgm_cost[prev_row_idx + k + 1] + self.p1 } else { f32::MAX };
+                    let l_minus1 =
+                        if k > 0 { sgm_cost[prev_row_idx + k - 1] + self.p1 } else { f32::MAX };
+                    let l_plus1 = if k + 1 < d_count {
+                        sgm_cost[prev_row_idx + k + 1] + self.p1
+                    } else {
+                        f32::MAX
+                    };
                     let l_min_p2 = min_prev + self.p2;
 
                     let min_l = l_same.min(l_minus1).min(l_plus1).min(l_min_p2);

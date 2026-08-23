@@ -180,9 +180,7 @@ pub fn compute_plane_homography(
     let tn_t_d22 = r.get(2, 2) + (t.z * n.z) * inv_d;
 
     let h_euc = Matrix3x3::from_row_major([
-        tn_t_d00, tn_t_d01, tn_t_d02,
-        tn_t_d10, tn_t_d11, tn_t_d12,
-        tn_t_d20, tn_t_d21, tn_t_d22,
+        tn_t_d00, tn_t_d01, tn_t_d02, tn_t_d10, tn_t_d11, tn_t_d12, tn_t_d20, tn_t_d21, tn_t_d22,
     ]);
 
     let temp = mat_k2.mul_mat(&h_euc);
@@ -198,8 +196,9 @@ pub fn compute_plane_homography(
 
 /// Checks if camera motion is degenerate for 3D triangulation (pure rotation or near-zero baseline ||t|| < min_baseline).
 pub fn check_motion_degeneracy(translation: Vector3, min_baseline: f64) -> bool {
-    let norm_sq =
-        translation.x * translation.x + translation.y * translation.y + translation.z * translation.z;
+    let norm_sq = translation.x * translation.x
+        + translation.y * translation.y
+        + translation.z * translation.z;
     norm_sq < (min_baseline * min_baseline)
 }
 

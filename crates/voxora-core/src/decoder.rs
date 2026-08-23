@@ -268,7 +268,10 @@ impl FffmpegVideoDecoder {
             .stderr(Stdio::null())
             .spawn()
             .map_err(|e| {
-                VoxoraError::DecoderError(format!("Failed to launch ffmpeg for video path '{}': {}", path, e))
+                VoxoraError::DecoderError(format!(
+                    "Failed to launch ffmpeg for video path '{}': {}",
+                    path, e
+                ))
             })?;
 
         let stdout = child.stdout.take().ok_or_else(|| {
@@ -286,13 +289,7 @@ impl FffmpegVideoDecoder {
             color_space: ColorSpace::SRgb,
         };
 
-        Ok(Self {
-            metadata,
-            stdout,
-            _child: child,
-            frame_bytes,
-            current_frame: 0,
-        })
+        Ok(Self { metadata, stdout, _child: child, frame_bytes, current_frame: 0 })
     }
 }
 

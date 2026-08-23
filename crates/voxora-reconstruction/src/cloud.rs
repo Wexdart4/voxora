@@ -189,13 +189,15 @@ impl PointCloud {
             }
         }
 
-        let valid_dists: Vec<f64> = mean_distances.iter().copied().filter(|&d| d < f64::MAX / 4.0).collect();
+        let valid_dists: Vec<f64> =
+            mean_distances.iter().copied().filter(|&d| d < f64::MAX / 4.0).collect();
         if valid_dists.is_empty() {
             return self.clone();
         }
 
         let global_mean: f64 = valid_dists.iter().sum::<f64>() / valid_dists.len() as f64;
-        let variance: f64 = valid_dists.iter().map(|d| (d - global_mean).powi(2)).sum::<f64>() / valid_dists.len() as f64;
+        let variance: f64 = valid_dists.iter().map(|d| (d - global_mean).powi(2)).sum::<f64>()
+            / valid_dists.len() as f64;
         let std_dev = variance.sqrt();
 
         let threshold = global_mean + std_mul * std_dev;

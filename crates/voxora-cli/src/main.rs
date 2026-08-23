@@ -4,10 +4,10 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use voxora::{
-    export_gltf_json, export_obj, export_ply, export_trajectory_csv, info,
-    BoundedFrameQueue, CameraPose, CameraTrajectory, FffmpegVideoDecoder, Point3D, PointCloud,
-    ReconstructionQuality, SoftwareRenderer, StereoCameraRig, StereoFrameComposer, StereoLayout,
-    SyntheticVideoDecoder, Vector3, VideoDecoder, VirtualCamera,
+    export_gltf_json, export_obj, export_ply, export_trajectory_csv, info, BoundedFrameQueue,
+    CameraPose, CameraTrajectory, FffmpegVideoDecoder, Point3D, PointCloud, ReconstructionQuality,
+    SoftwareRenderer, StereoCameraRig, StereoFrameComposer, StereoLayout, SyntheticVideoDecoder,
+    Vector3, VideoDecoder, VirtualCamera,
 };
 
 fn print_usage() {
@@ -147,7 +147,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut decoder: Box<dyn VideoDecoder> = if has_input_file {
                 match FffmpegVideoDecoder::open(&input_path, 320, 240) {
                     Ok(dec) => {
-                        println!("  [FFmpeg Stream] Successfully opened input video: {}", input_path);
+                        println!(
+                            "  [FFmpeg Stream] Successfully opened input video: {}",
+                            input_path
+                        );
                         Box::new(dec)
                     }
                     Err(err) => {
@@ -179,18 +182,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             if !frames.is_empty() {
                 // Multi-Frame Spatial Keyframe Fusion Queue
-                let mut keyframe_pairs: Vec<(voxora::Frame, voxora::Frame, CameraPose)> = Vec::new();
+                let mut keyframe_pairs: Vec<(voxora::Frame, voxora::Frame, CameraPose)> =
+                    Vec::new();
                 let mut prev_keyframe: Option<voxora::Frame> = None;
 
                 let mut is_pure_rotation = false;
                 let mut total_baseline = 0.0;
 
                 for (idx, frame) in frames.iter().enumerate() {
-                    let rot_yaw = (idx as f64 / frames.len() as f64) * std::f64::consts::PI * 0.3 - std::f64::consts::PI * 0.15;
+                    let rot_yaw = (idx as f64 / frames.len() as f64) * std::f64::consts::PI * 0.3
+                        - std::f64::consts::PI * 0.15;
                     let rot_mat = voxora::Matrix3x3::from_row_major([
-                        rot_yaw.cos(), 0.0, rot_yaw.sin(),
-                        0.0, 1.0, 0.0,
-                        -rot_yaw.sin(), 0.0, rot_yaw.cos(),
+                        rot_yaw.cos(),
+                        0.0,
+                        rot_yaw.sin(),
+                        0.0,
+                        1.0,
+                        0.0,
+                        -rot_yaw.sin(),
+                        0.0,
+                        rot_yaw.cos(),
                     ]);
 
                     // Calculate translation vector based on video trajectory motion profile
@@ -205,7 +216,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     };
                     let pose = CameraPose::new(rot_mat, t_vec);
 
-                    total_baseline += (t_vec.x * t_vec.x + t_vec.y * t_vec.y + t_vec.z * t_vec.z).sqrt();
+                    total_baseline +=
+                        (t_vec.x * t_vec.x + t_vec.y * t_vec.y + t_vec.z * t_vec.z).sqrt();
 
                     if idx % 40 == 0 {
                         if let Some(ref prev) = prev_keyframe {
@@ -217,7 +229,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     trajectory.add_relative_pose(pose);
                 }
 
-                let avg_baseline = if !frames.is_empty() { total_baseline / frames.len() as f64 } else { 0.0 };
+                let avg_baseline =
+                    if !frames.is_empty() { total_baseline / frames.len() as f64 } else { 0.0 };
                 if voxora::check_motion_degeneracy(Vector3::new(avg_baseline, 0.0, 0.0), 0.05) {
                     is_pure_rotation = true;
                     println!("  [Motion Degeneracy Detected] Pure rotation motion (baseline ||t|| = {:.3}m < 0.05m).", avg_baseline);
@@ -235,15 +248,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let theta_span = std::f64::consts::PI * 0.45; // Span from -81 deg to +81 deg
 
                     // Build frame rotation matrices and pre-store frame poses
-                    let frame_poses: Vec<CameraPose> = frames.iter().enumerate().map(|(idx, _)| {
-                        let rot_yaw = (idx as f64 / frames.len() as f64) * std::f64::consts::PI * 0.3 - std::f64::consts::PI * 0.15;
-                        let rot_mat = voxora::Matrix3x3::from_row_major([
-                            rot_yaw.cos(), 0.0, rot_yaw.sin(),
-                            0.0, 1.0, 0.0,
-                            -rot_yaw.sin(), 0.0, rot_yaw.cos(),
-                        ]);
-                        CameraPose::new(rot_mat, Vector3::ZERO)
-                    }).collect();
+                    let frame_poses: Vec<CameraPose> = frames
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, _)| {
+                            let rot_yaw =
+                                (idx as f64 / frames.len() as f64) * std::f64::consts::PI * 0.3
+                                    - std::f64::consts::PI * 0.15;
+                            let rot_mat = voxora::Matrix3x3::from_row_major([
+                                rot_yaw.cos(),
+                                0.0,
+                                rot_yaw.sin(),
+                                0.0,
+                                1.0,
+                                0.0,
+                                -rot_yaw.sin(),
+                                0.0,
+                                rot_yaw.cos(),
+                            ]);
+                            CameraPose::new(rot_mat, Vector3::ZERO)
+                        })
+                        .collect();
 
                     for i in 0..pan_grid_u {
                         let norm_u = i as f64 / (pan_grid_u - 1) as f64;
@@ -272,17 +297,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     let norm_x_cam = p_cam.x / p_cam.z;
                                     let norm_y_cam = -p_cam.y / p_cam.z;
 
-                                    let img_x = (norm_x_cam * (frame.width as f64 / 2.0) + (frame.width as f64 / 2.0)) as i32;
-                                    let img_y = (-norm_y_cam * (frame.height as f64 / 2.0) + (frame.height as f64 / 2.0)) as i32;
+                                    let img_x = (norm_x_cam * (frame.width as f64 / 2.0)
+                                        + (frame.width as f64 / 2.0))
+                                        as i32;
+                                    let img_y = (-norm_y_cam * (frame.height as f64 / 2.0)
+                                        + (frame.height as f64 / 2.0))
+                                        as i32;
 
-                                    if img_x >= 0 && img_x < frame.width as i32 && img_y >= 0 && img_y < frame.height as i32 {
+                                    if img_x >= 0
+                                        && img_x < frame.width as i32
+                                        && img_y >= 0
+                                        && img_y < frame.height as i32
+                                    {
                                         let wx = img_x.min(frame.width as i32 - 1 - img_x) as f64;
                                         let wy = img_y.min(frame.height as i32 - 1 - img_y) as f64;
                                         let weight = wx * wy; // Distance to image optical center
 
                                         if weight > max_weight {
                                             max_weight = weight;
-                                            let px_idx = ((img_y as u32 * frame.width + img_x as u32) * 3) as usize;
+                                            let px_idx =
+                                                ((img_y as u32 * frame.width + img_x as u32) * 3)
+                                                    as usize;
                                             best_rgb = (
                                                 frame.data[px_idx],
                                                 frame.data[px_idx + 1],
@@ -303,7 +338,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     if keyframe_pairs.is_empty() && frames.len() >= 2 {
                         let pose = CameraPose::default();
-                        keyframe_pairs.push((frames[0].clone(), frames[frames.len() - 1].clone(), pose));
+                        keyframe_pairs.push((
+                            frames[0].clone(),
+                            frames[frames.len() - 1].clone(),
+                            pose,
+                        ));
                     }
 
                     let pss = voxora::PlaneSweepStereo::new(32, 1.2, 6.0, 10.0, 80.0);
@@ -313,11 +352,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                         for i in 0..steps_u {
                             let img_x = (i as u32 * (left.width - 1)) / (steps_u as u32 - 1);
-                            let norm_x = (img_x as f64 - (left.width as f64 / 2.0)) / (left.width as f64 / 2.0);
+                            let norm_x = (img_x as f64 - (left.width as f64 / 2.0))
+                                / (left.width as f64 / 2.0);
 
                             for j in 0..steps_v {
                                 let img_y = (j as u32 * (left.height - 1)) / (steps_v as u32 - 1);
-                                let norm_y = (img_y as f64 - (left.height as f64 / 2.0)) / (left.height as f64 / 2.0);
+                                let norm_y = (img_y as f64 - (left.height as f64 / 2.0))
+                                    / (left.height as f64 / 2.0);
 
                                 let px_idx = ((img_y * left.width + img_x) * 3) as usize;
                                 let r = left.data[px_idx];
@@ -326,7 +367,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                                 let disp_idx = (img_y * left.width + img_x) as usize;
                                 let raw_depth = depth_map[disp_idx];
-                                let depth = if raw_depth > 0.5 { (raw_depth as f64).clamp(1.2, 6.0) } else { 3.5 };
+                                let depth = if raw_depth > 0.5 {
+                                    (raw_depth as f64).clamp(1.2, 6.0)
+                                } else {
+                                    3.5
+                                };
                                 let (x, y, z) = (norm_x * depth, -norm_y * depth, depth);
 
                                 let p_cam = Vector3::new(x, y, z);
