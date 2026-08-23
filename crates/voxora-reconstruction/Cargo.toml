@@ -14,7 +14,7 @@ description = "3D Point cloud management and spatial multi-frame reconstruction 
 workspace = true
 
 [dependencies]
-voxora-core = { path = "../voxora-core", version = "0.1.0" }
-voxora-geometry = { path = "../voxora-geometry", version = "0.1.0" }
-voxora-math = { path = "../voxora-math", version = "0.1.0" }
-voxora-vision = { path = "../voxora-vision", version = "0.1.0" }
+voxora-core = { path = "../voxora-core", version = "0.1.1" }
+voxora-geometry = { path = "../voxora-geometry", version = "0.1.1" }
+voxora-math = { path = "../voxora-math", version = "0.1.1" }
+voxora-vision = { path = "../voxora-vision", version = "0.1.1" }

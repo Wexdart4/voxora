@@ -14,5 +14,5 @@ description = "Computer vision, feature detection, and optical flow algorithms f
 workspace = true
 
 [dependencies]
-voxora-core = { path = "../voxora-core", version = "0.1.0" }
-voxora-math = { path = "../voxora-math", version = "0.1.0" }
+voxora-core = { path = "../voxora-core", version = "0.1.1" }
+voxora-math = { path = "../voxora-math", version = "0.1.1" }

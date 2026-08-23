@@ -14,9 +14,9 @@ description = "Deterministic 3D Video Projection in Pure Rust"
 workspace = true
 
 [dependencies]
-voxora-core = { path = "../voxora-core", version = "0.1.0" }
-voxora-geometry = { path = "../voxora-geometry", version = "0.1.0" }
-voxora-math = { path = "../voxora-math", version = "0.1.0" }
-voxora-reconstruction = { path = "../voxora-reconstruction", version = "0.1.0" }
-voxora-render = { path = "../voxora-render", version = "0.1.0" }
-voxora-vision = { path = "../voxora-vision", version = "0.1.0" }
+voxora-core = { path = "../voxora-core", version = "0.1.1" }
+voxora-geometry = { path = "../voxora-geometry", version = "0.1.1" }
+voxora-math = { path = "../voxora-math", version = "0.1.1" }
+voxora-reconstruction = { path = "../voxora-reconstruction", version = "0.1.1" }
+voxora-render = { path = "../voxora-render", version = "0.1.1" }
+voxora-vision = { path = "../voxora-vision", version = "0.1.1" }
