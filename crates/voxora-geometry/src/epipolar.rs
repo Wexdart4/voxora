@@ -146,6 +146,63 @@ pub fn recover_pose(
     Some((best_pose, max_cheirality_inliers))
 }
 
+/// Computes Plane-Induced Homography Matrix $H_\pi = K_2 \left( R + \frac{\mathbf{t} \mathbf{n}^T}{d} \right) K_1^{-1}$.
+pub fn compute_plane_homography(
+    k1: &CameraIntrinsics,
+    k2: &CameraIntrinsics,
+    pose: &CameraPose,
+    plane_normal: Vector3,
+    plane_distance: f64,
+) -> Option<Matrix3x3> {
+    if plane_distance.abs() < 1e-6 {
+        return None;
+    }
+
+    let mat_k1 = k1.to_matrix();
+    let mat_k2 = k2.to_matrix();
+    let inv_k1 = mat_k1.invert()?;
+
+    let n = plane_normal.normalize().unwrap_or(Vector3::new(0.0, 0.0, 1.0));
+    let t = pose.translation;
+    let r = pose.rotation;
+
+    let inv_d = 1.0 / plane_distance;
+    let tn_t_d00 = r.get(0, 0) + (t.x * n.x) * inv_d;
+    let tn_t_d01 = r.get(0, 1) + (t.x * n.y) * inv_d;
+    let tn_t_d02 = r.get(0, 2) + (t.x * n.z) * inv_d;
+
+    let tn_t_d10 = r.get(1, 0) + (t.y * n.x) * inv_d;
+    let tn_t_d11 = r.get(1, 1) + (t.y * n.y) * inv_d;
+    let tn_t_d12 = r.get(1, 2) + (t.y * n.z) * inv_d;
+
+    let tn_t_d20 = r.get(2, 0) + (t.z * n.x) * inv_d;
+    let tn_t_d21 = r.get(2, 1) + (t.z * n.y) * inv_d;
+    let tn_t_d22 = r.get(2, 2) + (t.z * n.z) * inv_d;
+
+    let h_euc = Matrix3x3::from_row_major([
+        tn_t_d00, tn_t_d01, tn_t_d02,
+        tn_t_d10, tn_t_d11, tn_t_d12,
+        tn_t_d20, tn_t_d21, tn_t_d22,
+    ]);
+
+    let temp = mat_k2.mul_mat(&h_euc);
+    let h = temp.mul_mat(&inv_k1);
+
+    let scale = h.get(2, 2);
+    if scale.abs() > 1e-8 {
+        Some(h.scale(1.0 / scale))
+    } else {
+        Some(h)
+    }
+}
+
+/// Checks if camera motion is degenerate for 3D triangulation (pure rotation or near-zero baseline ||t|| < min_baseline).
+pub fn check_motion_degeneracy(translation: Vector3, min_baseline: f64) -> bool {
+    let norm_sq =
+        translation.x * translation.x + translation.y * translation.y + translation.z * translation.z;
+    norm_sq < (min_baseline * min_baseline)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -155,5 +212,26 @@ mod tests {
         let em = EssentialMatrix::new(Matrix3x3::IDENTITY);
         let dist = em.sampson_distance((0.0, 0.0), (0.0, 0.0));
         assert!(dist >= 0.0);
+    }
+
+    #[test]
+    fn test_compute_plane_homography() {
+        let k1 = CameraIntrinsics::from_fov(60.0, 320, 240);
+        let k2 = k1.clone();
+        let pose = CameraPose::new(Matrix3x3::IDENTITY, Vector3::new(-0.2, 0.0, 0.0));
+        let n = Vector3::new(0.0, 0.0, 1.0);
+        let d = 2.0;
+
+        let h = compute_plane_homography(&k1, &k2, &pose, n, d);
+        assert!(h.is_some());
+    }
+
+    #[test]
+    fn test_check_motion_degeneracy() {
+        let zero_t = Vector3::new(0.0, 0.0, 0.0);
+        let valid_t = Vector3::new(0.3, 0.0, 0.1);
+
+        assert!(check_motion_degeneracy(zero_t, 0.05));
+        assert!(!check_motion_degeneracy(valid_t, 0.05));
     }
 }

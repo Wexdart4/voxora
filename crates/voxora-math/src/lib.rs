@@ -147,6 +147,15 @@ impl Matrix3x3 {
         ];
         Some(Self::from_row_major(out))
     }
+
+    /// Scales all matrix elements by a scalar factor.
+    pub fn scale(&self, s: f64) -> Self {
+        let mut out = [0.0; 9];
+        for i in 0..9 {
+            out[i] = self.data[i] * s;
+        }
+        Self::from_row_major(out)
+    }
 }
 
 #[cfg(test)]

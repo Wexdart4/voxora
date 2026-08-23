@@ -14,13 +14,15 @@ pub use voxora_render as render;
 pub use voxora_vision as vision;
 
 pub use voxora_core::decoder::{
-    ColorSpace, ImageSequenceDecoder, SyntheticVideoDecoder, VideoDecoder, VideoMetadata,
-    VideoReader,
+    ColorSpace, FffmpegVideoDecoder, ImageSequenceDecoder, SyntheticVideoDecoder, VideoDecoder,
+    VideoMetadata, VideoReader,
 };
 pub use voxora_core::{BoundedFrameQueue, Frame, FrameF32, PixelFormat, VoxoraError};
 
 pub use voxora_geometry::camera::{CameraIntrinsics, CameraPose, LensDistortion};
-pub use voxora_geometry::epipolar::{recover_pose, EssentialMatrix};
+pub use voxora_geometry::epipolar::{
+    check_motion_degeneracy, compute_plane_homography, recover_pose, EssentialMatrix,
+};
 pub use voxora_geometry::se3::{Quaternion, TransformSE3};
 pub use voxora_geometry::trajectory::{CameraTrajectory, MotionCategory, TrajectoryFilter};
 pub use voxora_math::{
@@ -28,7 +30,7 @@ pub use voxora_math::{
 };
 pub use voxora_reconstruction::cloud::{Point3D, PointCloud};
 pub use voxora_reconstruction::metrics::{DiagnosticsReport, ReconstructionQuality};
-pub use voxora_reconstruction::stereo::{BlockMatcher, DisparityMap};
+pub use voxora_reconstruction::stereo::{BlockMatcher, DisparityMap, PlaneSweepStereo};
 pub use voxora_reconstruction::triangulation::{
     triangulate_matches, triangulate_point, TriangulationResult,
 };

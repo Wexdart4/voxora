@@ -7,6 +7,10 @@ use std::fmt;
 pub mod decoder;
 pub mod stream;
 
+pub use decoder::{
+    ColorSpace, FffmpegVideoDecoder, ImageSequenceDecoder, SyntheticVideoDecoder, VideoDecoder,
+    VideoMetadata, VideoReader,
+};
 pub use stream::BoundedFrameQueue;
 
 /// Pixel format types supported by Voxora frame representation.

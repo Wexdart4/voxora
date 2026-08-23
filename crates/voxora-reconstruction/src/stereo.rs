@@ -113,7 +113,242 @@ impl BlockMatcher {
             }
         }
 
-        depth_map
+        Self::smooth_depth_map(&depth_map, disp_map.width, disp_map.height)
+    }
+
+    /// Applies 5x5 Median Spatial Depth Smoothing to eliminate depth noise spikes and flatten surfaces.
+    pub fn smooth_depth_map(depth_map: &[f32], width: usize, height: usize) -> Vec<f32> {
+        let mut smoothed = depth_map.to_vec();
+
+        for y in 2..(height - 2) {
+            for x in 2..(width - 2) {
+                let mut window = Vec::with_capacity(25);
+                for dy in -2..=2 {
+                    for dx in -2..=2 {
+                        let idx = (y as i32 + dy) as usize * width + (x as i32 + dx) as usize;
+                        let val = depth_map[idx];
+                        if val > 0.1 {
+                            window.push(val);
+                        }
+                    }
+                }
+
+                if !window.is_empty() {
+                    window.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                    let median = window[window.len() / 2];
+                    smoothed[y * width + x] = median;
+                }
+            }
+        }
+
+        smoothed
+    }
+}
+
+/// Plane Sweep Stereo engine utilizing 5x5 Census Transform, Inverse Depth Sampling,
+/// and 1D Scanline Semi-Global Matching (SGM) Dynamic Programming optimization.
+#[derive(Debug, Clone)]
+pub struct PlaneSweepStereo {
+    /// Number of plane sweep sampling layers D (e.g. 32)
+    pub num_planes: usize,
+    /// Minimum depth boundary in meters (e.g. 1.0)
+    pub min_depth: f32,
+    /// Maximum depth boundary in meters (e.g. 8.0)
+    pub max_depth: f32,
+    /// SGM Penalty P1 for small disparity step |d1 - d2| = 1
+    pub p1: f32,
+    /// SGM Penalty P2 for large disparity step |d1 - d2| > 1
+    pub p2: f32,
+}
+
+impl Default for PlaneSweepStereo {
+    fn default() -> Self {
+        Self {
+            num_planes: 32,
+            min_depth: 1.0,
+            max_depth: 8.0,
+            p1: 10.0,
+            p2: 80.0,
+        }
+    }
+}
+
+impl PlaneSweepStereo {
+    /// Creates a new Plane Sweep Stereo engine.
+    pub fn new(num_planes: usize, min_depth: f32, max_depth: f32, p1: f32, p2: f32) -> Self {
+        Self {
+            num_planes,
+            min_depth,
+            max_depth,
+            p1,
+            p2,
+        }
+    }
+
+    /// Computes 5x5 Census Transform bitmask for a grayscale frame.
+    pub fn compute_census_transform(frame: &Frame) -> Vec<u32> {
+        let gray = frame.to_grayscale();
+        let width = gray.width as usize;
+        let height = gray.height as usize;
+        let mut census = vec![0u32; width * height];
+
+        for y in 2..(height - 2) {
+            for x in 2..(width - 2) {
+                let center_val = gray.data[y * width + x];
+                let mut bitmask = 0u32;
+                let mut bit_idx = 0;
+
+                for dy in -2..=2 {
+                    for dx in -2..=2 {
+                        if dx == 0 && dy == 0 {
+                            continue;
+                        }
+                        let val =
+                            gray.data[((y as i32 + dy) as usize) * width + ((x as i32 + dx) as usize)];
+                        if val >= center_val {
+                            bitmask |= 1 << bit_idx;
+                        }
+                        bit_idx += 1;
+                    }
+                }
+                census[y * width + x] = bitmask;
+            }
+        }
+
+        census
+    }
+
+    /// Computes inverse depth sampled plane depths $d_k = \frac{1}{s_k}$.
+    pub fn compute_inverse_depth_planes(&self) -> Vec<f32> {
+        let s_min = 1.0 / self.max_depth;
+        let s_max = 1.0 / self.min_depth;
+        let d = self.num_planes;
+
+        let mut planes = Vec::with_capacity(d);
+        for k in 0..d {
+            let frac = if d > 1 { k as f32 / (d - 1) as f32 } else { 0.0 };
+            let s_k = s_min + frac * (s_max - s_min);
+            planes.push(1.0 / s_k);
+        }
+
+        planes
+    }
+
+    /// Computes dense depth map using Plane Sweep Stereo + SGM Scanline Energy Minimization.
+    pub fn compute_depth_map(
+        &self,
+        ref_frame: &Frame,
+        src_frame: &Frame,
+    ) -> Result<Vec<f32>, VoxoraError> {
+        let width = ref_frame.width as usize;
+        let height = ref_frame.height as usize;
+        let d_count = self.num_planes;
+
+        let ref_census = Self::compute_census_transform(ref_frame);
+        let src_census = Self::compute_census_transform(src_frame);
+
+        let planes = self.compute_inverse_depth_planes();
+
+        // 1. Build Cost Volume: cost_vol[y * width * d_count + x * d_count + k]
+        let mut cost_volume = vec![0.0f32; width * height * d_count];
+
+        for k in 0..d_count {
+            let depth = planes[k];
+            // Disparity shift in pixels: disp = (focal_length * baseline) / depth
+            // Approximating baseline shift proportional to (max_depth / depth)
+            let shift_x = (8.0 * (self.min_depth / depth)) as i32;
+
+            for y in 2..(height - 2) {
+                for x in 2..(width - 2) {
+                    let ref_idx = y * width + x;
+                    let ref_c = ref_census[ref_idx];
+
+                    let src_x = x as i32 - shift_x;
+                    let cost = if src_x >= 2 && src_x < (width as i32 - 2) {
+                        let src_idx = y * width + src_x as usize;
+                        let src_c = src_census[src_idx];
+                        (ref_c ^ src_c).count_ones() as f32
+                    } else {
+                        24.0 // Max Hamming penalty for out-of-bounds
+                    };
+
+                    cost_volume[(y * width + x) * d_count + k] = cost;
+                }
+            }
+        }
+
+        // 2. 1D Scanline SGM Dynamic Programming (Left to Right pass)
+        let mut sgm_cost = cost_volume.clone();
+
+        for y in 2..(height - 2) {
+            for x in 3..(width - 2) {
+                let curr_row_idx = (y * width + x) * d_count;
+                let prev_row_idx = (y * width + (x - 1)) * d_count;
+
+                // Find min cost in previous pixel
+                let mut min_prev = f32::MAX;
+                for k in 0..d_count {
+                    let c = sgm_cost[prev_row_idx + k];
+                    if c < min_prev {
+                        min_prev = c;
+                    }
+                }
+
+                for k in 0..d_count {
+                    let l_same = sgm_cost[prev_row_idx + k];
+                    let l_minus1 = if k > 0 { sgm_cost[prev_row_idx + k - 1] + self.p1 } else { f32::MAX };
+                    let l_plus1 = if k + 1 < d_count { sgm_cost[prev_row_idx + k + 1] + self.p1 } else { f32::MAX };
+                    let l_min_p2 = min_prev + self.p2;
+
+                    let min_l = l_same.min(l_minus1).min(l_plus1).min(l_min_p2);
+                    sgm_cost[curr_row_idx + k] += min_l - min_prev;
+                }
+            }
+        }
+
+        // 3. Winner-Takes-All (WTA) Depth Selection with Parabolic Sub-Pixel Refinement
+        let mut depth_map = vec![self.max_depth; width * height];
+
+        for y in 0..height {
+            for x in 0..width {
+                let idx_base = (y * width + x) * d_count;
+                let mut min_c = f32::MAX;
+                let mut best_k = 0;
+
+                for k in 0..d_count {
+                    let c = sgm_cost[idx_base + k];
+                    if c < min_c {
+                        min_c = c;
+                        best_k = k;
+                    }
+                }
+
+                // Sub-pixel Parabolic (Quadratic) Interpolation around best_k
+                let k_sub = if best_k > 0 && best_k + 1 < d_count {
+                    let c0 = sgm_cost[idx_base + best_k - 1];
+                    let c1 = sgm_cost[idx_base + best_k];
+                    let c2 = sgm_cost[idx_base + best_k + 1];
+                    let denom = 2.0 * (c0 - 2.0 * c1 + c2);
+                    if denom.abs() > 1e-4 {
+                        let delta = -((c2 - c0) / denom).clamp(-0.5, 0.5);
+                        best_k as f32 + delta
+                    } else {
+                        best_k as f32
+                    }
+                } else {
+                    best_k as f32
+                };
+
+                let s_min = 1.0 / self.max_depth;
+                let s_max = 1.0 / self.min_depth;
+                let frac = if d_count > 1 { k_sub / (d_count - 1) as f32 } else { 0.0 };
+                let s_k = s_min + frac * (s_max - s_min);
+
+                depth_map[y * width + x] = 1.0 / s_k;
+            }
+        }
+
+        Ok(BlockMatcher::smooth_depth_map(&depth_map, width, height))
     }
 }
 
@@ -131,5 +366,14 @@ mod tests {
         let disp = matcher.compute_disparity(&f1, &f2).unwrap();
         assert_eq!(disp.width, 32);
         assert_eq!(disp.height, 32);
+    }
+
+    #[test]
+    fn test_plane_sweep_stereo() {
+        let f1 = Frame::new(16, 16, PixelFormat::Rgb8, vec![120; 16 * 16 * 3]).unwrap();
+        let f2 = Frame::new(16, 16, PixelFormat::Rgb8, vec![120; 16 * 16 * 3]).unwrap();
+        let pss = PlaneSweepStereo::new(8, 1.0, 5.0, 5.0, 20.0);
+        let depth = pss.compute_depth_map(&f1, &f2).unwrap();
+        assert_eq!(depth.len(), 16 * 16);
     }
 }

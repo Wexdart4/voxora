@@ -7,3 +7,5 @@
 *.swo
 /dist
 /voxora_output
+/output_*
+/tests/videos/*.mp4

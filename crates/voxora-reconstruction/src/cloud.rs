@@ -134,35 +134,68 @@ impl PointCloud {
     }
 
     /// Removes isolated outlier points whose average k-nearest neighbor distance exceeds $\mu + k \cdot \sigma$.
+    /// Uses 3D spatial grid hashing for $O(N)$ fast neighborhood lookup.
     pub fn statistical_outlier_removal(&self, k_neighbors: usize, std_mul: f64) -> PointCloud {
         let n = self.points.len();
         if n <= k_neighbors || k_neighbors == 0 {
             return self.clone();
         }
 
+        use std::collections::HashMap;
+        let grid_size = 0.3f64; // 30cm spatial search bin
+        let mut grid: HashMap<(i64, i64, i64), Vec<usize>> = HashMap::new();
+
+        for (idx, pt) in self.points.iter().enumerate() {
+            let gx = (pt.position.x / grid_size).floor() as i64;
+            let gy = (pt.position.y / grid_size).floor() as i64;
+            let gz = (pt.position.z / grid_size).floor() as i64;
+            grid.entry((gx, gy, gz)).or_default().push(idx);
+        }
+
         let mut mean_distances = vec![0.0f64; n];
 
-        for (i, mean_dist) in mean_distances.iter_mut().enumerate().take(n) {
+        for i in 0..n {
             let p1 = &self.points[i];
-            let mut dists = Vec::with_capacity(n - 1);
+            let gx = (p1.position.x / grid_size).floor() as i64;
+            let gy = (p1.position.y / grid_size).floor() as i64;
+            let gz = (p1.position.z / grid_size).floor() as i64;
 
-            for (j, p2) in self.points.iter().enumerate() {
-                if i != j {
-                    let dx = p1.position.x - p2.position.x;
-                    let dy = p1.position.y - p2.position.y;
-                    let dz = p1.position.z - p2.position.z;
-                    dists.push((dx * dx + dy * dy + dz * dz).sqrt());
+            let mut dists = Vec::with_capacity(64);
+
+            for dx in -1..=1 {
+                for dy in -1..=1 {
+                    for dz in -1..=1 {
+                        if let Some(neighbors) = grid.get(&(gx + dx, gy + dy, gz + dz)) {
+                            for &j in neighbors {
+                                if i != j {
+                                    let p2 = &self.points[j];
+                                    let dist_sq = (p1.position.x - p2.position.x).powi(2)
+                                        + (p1.position.y - p2.position.y).powi(2)
+                                        + (p1.position.z - p2.position.z).powi(2);
+                                    dists.push(dist_sq.sqrt());
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            dists.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            let k_sum: f64 = dists.iter().take(k_neighbors).sum();
-            *mean_dist = k_sum / k_neighbors as f64;
+            if dists.len() >= k_neighbors {
+                dists.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                let k_sum: f64 = dists.iter().take(k_neighbors).sum();
+                mean_distances[i] = k_sum / k_neighbors as f64;
+            } else {
+                mean_distances[i] = f64::MAX / 2.0; // Penalty for isolated points with few neighbors
+            }
         }
 
-        let global_mean: f64 = mean_distances.iter().sum::<f64>() / n as f64;
-        let variance: f64 =
-            mean_distances.iter().map(|d| (d - global_mean).powi(2)).sum::<f64>() / n as f64;
+        let valid_dists: Vec<f64> = mean_distances.iter().copied().filter(|&d| d < f64::MAX / 4.0).collect();
+        if valid_dists.is_empty() {
+            return self.clone();
+        }
+
+        let global_mean: f64 = valid_dists.iter().sum::<f64>() / valid_dists.len() as f64;
+        let variance: f64 = valid_dists.iter().map(|d| (d - global_mean).powi(2)).sum::<f64>() / valid_dists.len() as f64;
         let std_dev = variance.sqrt();
 
         let threshold = global_mean + std_mul * std_dev;

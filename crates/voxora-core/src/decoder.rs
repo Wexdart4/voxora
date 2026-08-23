@@ -2,6 +2,8 @@
 
 use crate::{Frame, PixelFormat, VoxoraError};
 use std::collections::VecDeque;
+use std::io::Read;
+use std::process::{Child, Command, Stdio};
 
 /// Color space metadata for decoded video streams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -232,6 +234,103 @@ impl VideoDecoder for ImageSequenceDecoder {
         }
         self.current_frame = frame_index;
         Ok(())
+    }
+}
+
+/// Video decoder backed by an external FFmpeg process streaming raw RGB24 frames via pipe.
+pub struct FffmpegVideoDecoder {
+    metadata: VideoMetadata,
+    stdout: std::process::ChildStdout,
+    _child: Child,
+    frame_bytes: usize,
+    current_frame: usize,
+}
+
+impl FffmpegVideoDecoder {
+    /// Spawns FFmpeg to decode the specified video path into raw RGB24 frames scaled to `(width, height)`.
+    pub fn open(path: &str, width: u32, height: u32) -> Result<Self, VoxoraError> {
+        let scale_filter = format!("scale={}:{}", width, height);
+        let mut child = Command::new("ffmpeg")
+            .args([
+                "-i",
+                path,
+                "-vf",
+                &scale_filter,
+                "-f",
+                "rawvideo",
+                "-pix_fmt",
+                "rgb24",
+                "-loglevel",
+                "quiet",
+                "-",
+            ])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .map_err(|e| {
+                VoxoraError::DecoderError(format!("Failed to launch ffmpeg for video path '{}': {}", path, e))
+            })?;
+
+        let stdout = child.stdout.take().ok_or_else(|| {
+            VoxoraError::DecoderError("Failed to open ffmpeg stdout stream pipe".into())
+        })?;
+
+        let frame_bytes = (width * height * 3) as usize;
+        let metadata = VideoMetadata {
+            width,
+            height,
+            fps: 30.0,
+            total_frames: None,
+            duration_secs: None,
+            pixel_format: PixelFormat::Rgb8,
+            color_space: ColorSpace::SRgb,
+        };
+
+        Ok(Self {
+            metadata,
+            stdout,
+            _child: child,
+            frame_bytes,
+            current_frame: 0,
+        })
+    }
+}
+
+impl VideoDecoder for FffmpegVideoDecoder {
+    fn metadata(&self) -> &VideoMetadata {
+        &self.metadata
+    }
+
+    fn next_frame(&mut self) -> Result<Option<Frame>, VoxoraError> {
+        let mut buffer = vec![0u8; self.frame_bytes];
+        let mut bytes_read = 0;
+
+        while bytes_read < self.frame_bytes {
+            match self.stdout.read(&mut buffer[bytes_read..]) {
+                Ok(0) => break, // EOF reached
+                Ok(n) => bytes_read += n,
+                Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+                Err(e) => {
+                    return Err(VoxoraError::DecoderError(format!(
+                        "Error reading frame stream from ffmpeg: {}",
+                        e
+                    )))
+                }
+            }
+        }
+
+        if bytes_read < self.frame_bytes {
+            return Ok(None);
+        }
+
+        self.current_frame += 1;
+        Frame::new(self.metadata.width, self.metadata.height, PixelFormat::Rgb8, buffer).map(Some)
+    }
+
+    fn seek(&mut self, _frame_index: usize) -> Result<(), VoxoraError> {
+        Err(VoxoraError::DecoderError(
+            "Stream seeking not supported on live FFmpeg stdout pipe".into(),
+        ))
     }
 }
 
